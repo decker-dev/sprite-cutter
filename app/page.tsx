@@ -28,6 +28,11 @@ export default function SpriteCutter() {
   const [scale, setScale] = useState(1)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState("")
+  const [downloadProgress, setDownloadProgress] = useState<{ isDownloading: boolean; current: number; total: number }>({
+    isDownloading: false,
+    current: 0,
+    total: 0,
+  })
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -186,34 +191,56 @@ export default function SpriteCutter() {
   const downloadCrops = async () => {
     if (!image || cropAreas.length === 0) return
 
-    for (let i = 0; i < cropAreas.length; i++) {
-      const area = cropAreas[i]
+    setDownloadProgress({ isDownloading: true, current: 0, total: cropAreas.length })
 
-      // Create a temporary canvas for cropping
-      const tempCanvas = document.createElement("canvas")
-      const tempCtx = tempCanvas.getContext("2d")
-      if (!tempCtx) continue
-
-      tempCanvas.width = area.width
-      tempCanvas.height = area.height
-
-      // Draw the cropped portion
-      tempCtx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
-
-      // Convert to blob and download
-      tempCanvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.href = url
-          a.download = `${area.name}.png`
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
+    // Función para descargar un sprite individual
+    const downloadSingleSprite = (area: CropArea, index: number): Promise<void> => {
+      return new Promise((resolve) => {
+        // Create a temporary canvas for cropping
+        const tempCanvas = document.createElement("canvas")
+        const tempCtx = tempCanvas.getContext("2d")
+        if (!tempCtx) {
+          resolve()
+          return
         }
-      }, "image/png")
+
+        tempCanvas.width = area.width
+        tempCanvas.height = area.height
+
+        // Draw the cropped portion
+        tempCtx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
+
+        // Convert to blob and download
+        tempCanvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = `${area.name}.png`
+            a.style.display = "none"
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }
+          resolve()
+        }, "image/png")
+      })
     }
+
+    // Descargar sprites uno por uno con delay
+    for (let i = 0; i < cropAreas.length; i++) {
+      setDownloadProgress({ isDownloading: true, current: i + 1, total: cropAreas.length })
+
+      await downloadSingleSprite(cropAreas[i], i)
+
+      // Delay entre descargas para evitar bloqueo del navegador
+      if (i < cropAreas.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500))
+      }
+    }
+
+    setDownloadProgress({ isDownloading: false, current: 0, total: 0 })
   }
 
   const clearAll = () => {
@@ -280,9 +307,15 @@ export default function SpriteCutter() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Áreas de Recorte ({cropAreas.length})</h3>
                 <div className="flex gap-2">
-                  <Button onClick={downloadCrops} className="flex items-center gap-2">
+                  <Button
+                    onClick={downloadCrops}
+                    className="flex items-center gap-2"
+                    disabled={downloadProgress.isDownloading}
+                  >
                     <Download className="w-4 h-4" />
-                    Descargar Todos
+                    {downloadProgress.isDownloading
+                      ? `Descargando ${downloadProgress.current}/${downloadProgress.total}...`
+                      : "Descargar Todos"}
                   </Button>
                   <Button onClick={clearAll} variant="outline" className="flex items-center gap-2">
                     <Trash2 className="w-4 h-4" />
