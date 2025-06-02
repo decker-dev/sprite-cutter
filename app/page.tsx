@@ -32,7 +32,7 @@ type InteractionMode =
   | "resize-w"
   | "resize-e"
 
-// Memoized component for each sprite card
+// Componente memoizado para cada sprite card
 const SpriteCard = memo(
   ({
     area,
@@ -59,7 +59,7 @@ const SpriteCard = memo(
   }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
-    // Draw preview only when area or image changes
+    // Dibujar preview solo cuando cambie el área o la imagen
     useEffect(() => {
       const canvas = canvasRef.current
       if (canvas && image) {
@@ -115,7 +115,7 @@ const SpriteCard = memo(
 
         <div className="space-y-1 text-sm">
           <div className="flex items-center gap-2">
-            <strong>Name:</strong>
+            <strong>Nombre:</strong>
             {editingId === area.id ? (
               <div className="flex gap-1 flex-1">
                 <Input
@@ -141,10 +141,10 @@ const SpriteCard = memo(
             )}
           </div>
           <div>
-            <strong>Position:</strong> ({Math.round(area.x)}, {Math.round(area.y)})
+            <strong>Posición:</strong> ({Math.round(area.x)}, {Math.round(area.y)})
           </div>
           <div>
-            <strong>Size:</strong> {Math.round(area.width)} × {Math.round(area.height)}
+            <strong>Tamaño:</strong> {Math.round(area.width)} × {Math.round(area.height)}
           </div>
         </div>
       </Card>
@@ -171,7 +171,7 @@ export default function SpriteCutter() {
   const [isDragging, setIsDragging] = useState(false)
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("create")
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null)
-  const [activeAreaId, setActiveAreaId] = useState<string | null>(null) // Area that stays orange
+  const [activeAreaId, setActiveAreaId] = useState<string | null>(null) // Área que se mantiene naranja
   const [originalArea, setOriginalArea] = useState<CropArea | null>(null)
   const [isModifying, setIsModifying] = useState(false)
 
@@ -210,18 +210,18 @@ export default function SpriteCutter() {
     setOriginalArea(null)
     setIsModifying(false)
 
-    // Clear file input
+    // Limpiar el input file
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
   }, [])
 
-  // Function to detect which part of the rectangle was clicked
+  // Función para detectar en qué parte del recuadro se hizo clic
   const getInteractionMode = useCallback(
     (point: { x: number; y: number }, areas: CropArea[]): { mode: InteractionMode; areaId: string | null } => {
-      const handleSize = 8 / scale // Size of resize handles
+      const handleSize = 8 / scale // Tamaño de los handles de redimensionamiento
 
-      // Search in priority order: active -> selected -> rest
+      // Buscar en orden de prioridad: activa -> seleccionada -> resto
       const sortedAreas = [...areas].sort((a, b) => {
         if (a.id === activeAreaId) return -1
         if (b.id === activeAreaId) return 1
@@ -233,7 +233,7 @@ export default function SpriteCutter() {
       for (const area of sortedAreas) {
         const { x, y, width, height } = area
 
-        // Check corner handles
+        // Verificar handles de las esquinas
         if (
           point.x >= x - handleSize &&
           point.x <= x + handleSize &&
@@ -267,7 +267,7 @@ export default function SpriteCutter() {
           return { mode: "resize-se", areaId: area.id }
         }
 
-        // Check edge handles
+        // Verificar handles de los bordes
         if (
           point.x >= x - handleSize &&
           point.x <= x + width + handleSize &&
@@ -301,7 +301,7 @@ export default function SpriteCutter() {
           return { mode: "resize-e", areaId: area.id }
         }
 
-        // Check if inside area (for moving)
+        // Verificar si está dentro del área (para mover)
         if (point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height) {
           return { mode: "move", areaId: area.id }
         }
@@ -312,7 +312,7 @@ export default function SpriteCutter() {
     [scale, activeAreaId, selectedAreaId],
   )
 
-  // Function to get the appropriate cursor
+  // Función para obtener el cursor apropiado
   const getCursor = useCallback(
     (point: { x: number; y: number }, areas: CropArea[]): string => {
       const { mode } = getInteractionMode(point, areas)
@@ -372,29 +372,35 @@ export default function SpriteCutter() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
 
-      // Function to draw an area
+      // Función para dibujar un área
       const drawArea = (area: CropArea, index: number, color: "blue" | "orange" | "red") => {
-        const { x, y, width, height } = area
+        const colors = {
+          blue: { stroke: "#3b82f6", fill: "rgba(59, 130, 246, 0.2)" },
+          orange: { stroke: "#f97316", fill: "rgba(249, 115, 22, 0.2)" },
+          red: { stroke: "#ef4444", fill: "rgba(239, 68, 68, 0.2)" },
+        }
 
-        ctx.strokeStyle = color === "blue" ? "#3b82f6" : color === "orange" ? "#f97316" : "#ef4444"
-        ctx.lineWidth = 2 / scale
+        ctx.strokeStyle = colors[color].stroke
+        ctx.fillStyle = colors[color].fill
+        ctx.lineWidth = 2
+
+        const x = area.x * newScale
+        const y = area.y * newScale
+        const width = area.width * newScale
+        const height = area.height * newScale
+
+        ctx.fillRect(x, y, width, height)
         ctx.strokeRect(x, y, width, height)
 
         // Draw area number
-        ctx.fillStyle = color === "blue" ? "#3b82f6" : color === "orange" ? "#f97316" : "#ef4444"
-        ctx.font = `${14 / scale}px Arial`
-        ctx.fillText(`#${index + 1}`, x + 4 / scale, y + 18 / scale)
-
-        // Draw area name if it has one
-        if (area.name && area.name !== `sprite_${area.id.slice(0, 8)}`) {
-          ctx.fillText(area.name, x + 4 / scale, y + 36 / scale)
-        }
+        ctx.fillStyle = colors[color].stroke
+        ctx.font = "16px sans-serif"
+        ctx.fillText(`${index + 1}`, x + 5, y + 20)
 
         // Draw resize handles if selected or active
-        if (area.id === selectedAreaId || area.id === activeAreaId) {
+        if (color === "blue" || color === "orange") {
           const handleSize = 6
-          ctx.fillStyle = "#ffffff"
-          ctx.strokeStyle = "#000000"
+          ctx.fillStyle = colors[color].stroke
 
           // Corner handles
           ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
@@ -407,49 +413,43 @@ export default function SpriteCutter() {
           ctx.fillRect(x + width / 2 - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
           ctx.fillRect(x - handleSize / 2, y + height / 2 - handleSize / 2, handleSize, handleSize)
           ctx.fillRect(x + width - handleSize / 2, y + height / 2 - handleSize / 2, handleSize, handleSize)
-
-          ctx.strokeRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x + width - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x + width - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x + width / 2 - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x + width / 2 - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x - handleSize / 2, y + height / 2 - handleSize / 2, handleSize, handleSize)
-          ctx.strokeRect(x + width - handleSize / 2, y + height / 2 - handleSize / 2, handleSize, handleSize)
         }
       }
 
-      // Separate areas by state to control rendering order
-      const normalAreas: CropArea[] = []
-      const selectedArea = cropAreas.find((area) => area.id === selectedAreaId)
-      const activeArea = cropAreas.find((area) => area.id === activeAreaId)
+      // Separar áreas por estado para controlar el orden de renderizado
+      const normalAreas: { area: CropArea; index: number }[] = []
+      const selectedArea: { area: CropArea; index: number } | null = selectedAreaId
+        ? { area: areas.find((a) => a.id === selectedAreaId)!, index: areas.findIndex((a) => a.id === selectedAreaId) }
+        : null
+      const activeArea: { area: CropArea; index: number } | null = activeAreaId
+        ? { area: areas.find((a) => a.id === activeAreaId)!, index: areas.findIndex((a) => a.id === activeAreaId) }
+        : null
 
-      // Add normal areas (not selected or active)
-      cropAreas.forEach((area) => {
+      // Agregar áreas normales (no seleccionadas ni activas)
+      areas.forEach((area, index) => {
         if (area.id !== selectedAreaId && area.id !== activeAreaId) {
-          normalAreas.push(area)
+          normalAreas.push({ area, index })
         }
       })
 
-      // Draw in order: normal -> selected -> active
-      normalAreas.forEach((area, index) => {
-        const areaIndex = cropAreas.indexOf(area)
-        drawArea(area, areaIndex, "blue")
+      // Dibujar en orden: normales -> seleccionada -> activa
+      normalAreas.forEach(({ area, index }) => {
+        drawArea(area, index, "blue")
       })
 
-      if (selectedArea && selectedArea.id !== activeAreaId) {
-        drawArea(selectedArea, cropAreas.indexOf(selectedArea), "blue")
+      if (selectedArea && selectedArea.area.id !== activeAreaId) {
+        drawArea(selectedArea.area, selectedArea.index, "blue")
       }
 
       if (activeArea) {
-        drawArea(activeArea, cropAreas.indexOf(activeArea), "orange")
+        drawArea(activeArea.area, activeArea.index, "orange")
       }
 
       // Draw temporary area while creating (always red and on top)
       if (tempArea) {
         drawArea(
           tempArea,
-          areas.length, // Temporary number for the new area
+          areas.length, // Número temporal para el área nueva
           "red",
         )
       }
@@ -494,31 +494,17 @@ export default function SpriteCutter() {
         if (area) {
           setOriginalArea({ ...area })
           setIsModifying(true)
-          // If we click on a different area than the active one, the new one becomes active
+          // Si hacemos clic en un área diferente a la activa, la nueva se vuelve activa
           if (areaId !== activeAreaId) {
             setActiveAreaId(areaId)
-            setSelectedAreaId(null) // Clear selected when activating another
-          } else if (!areaId) {
-            // Click on empty area - deactivate active area
-            setActiveAreaId(null)
-            setSelectedAreaId(null)
           }
         }
       } else {
-        // Create new area - this deactivates the active area
+        // Click en área vacía - desactivar área activa
         setActiveAreaId(null)
-        setSelectedAreaId(null)
-        setIsDrawing(true)
-        setStartPoint(point)
-        setCurrentArea({
-          id: "",
-          x: point.x,
-          y: point.y,
-          width: 0,
-          height: 0,
-          name: "",
-        })
-        drawCanvas(image, cropAreas, currentArea || undefined)
+        setCurrentArea(null)
+        setOriginalArea(null)
+        setIsModifying(false)
       }
     },
     [image, getCanvasCoordinates, getInteractionMode, cropAreas, activeAreaId],
@@ -530,7 +516,7 @@ export default function SpriteCutter() {
 
       const point = getCanvasCoordinates(event)
 
-      // Update cursor
+      // Actualizar cursor
       const canvas = canvasRef.current
       if (canvas) {
         canvas.style.cursor = getCursor(point, cropAreas)
@@ -539,7 +525,7 @@ export default function SpriteCutter() {
       if (!isDrawing) return
 
       if (interactionMode === "create") {
-        // Create new area - this deactivates the active area
+        // Crear nueva área - esto desactiva el área activa
         setActiveAreaId(null)
 
         const width = Math.abs(point.x - startPoint.x)
@@ -559,7 +545,7 @@ export default function SpriteCutter() {
         setCurrentArea(tempArea)
         drawCanvas(image, cropAreas, tempArea)
       } else if (selectedAreaId && originalArea) {
-        // Modify existing area
+        // Modificar área existente
         const deltaX = point.x - startPoint.x
         const deltaY = point.y - startPoint.y
 
@@ -606,11 +592,11 @@ export default function SpriteCutter() {
             break
         }
 
-        // Ensure minimum dimensions
+        // Asegurar dimensiones mínimas
         if (newArea.width < 10) newArea.width = 10
         if (newArea.height < 10) newArea.height = 10
 
-        // Update the area in state
+        // Actualizar el área en el estado
         setCropAreas((prev) => prev.map((area) => (area.id === selectedAreaId ? newArea : area)))
       }
     },
@@ -632,7 +618,7 @@ export default function SpriteCutter() {
     if (!isDrawing) return
 
     if (interactionMode === "create" && currentArea && image) {
-      // Only add area if it has significant size
+      // Solo agregar área si tiene tamaño significativo
       if (currentArea.width > 10 && currentArea.height > 10) {
         const newArea: CropArea = {
           ...currentArea,
@@ -640,7 +626,7 @@ export default function SpriteCutter() {
           name: `sprite_${cropAreas.length + 1}`,
         }
         setCropAreas((prev) => [...prev, newArea])
-        // The newly created area becomes active automatically
+        // El área recién creada se vuelve activa
         setActiveAreaId(newArea.id)
       }
       setCurrentArea(null)
@@ -669,36 +655,40 @@ export default function SpriteCutter() {
 
     setDownloadProgress({ isDownloading: true, current: 0, total: cropAreas.length })
 
-    // Create a single ZIP with all sprites
+    // Crear un solo ZIP con todos los sprites
     const zip = new JSZip()
 
+    // Agregar cada sprite al ZIP
     for (let i = 0; i < cropAreas.length; i++) {
       const area = cropAreas[i]
+
+      // Actualizar progreso
       setDownloadProgress({ isDownloading: true, current: i + 1, total: cropAreas.length })
 
-      const canvas = document.createElement("canvas")
-      canvas.width = area.width
-      canvas.height = area.height
-      const ctx = canvas.getContext("2d")
+      // Crear canvas temporal para el sprite
+      const tempCanvas = document.createElement("canvas")
+      const tempCtx = tempCanvas.getContext("2d")
+      if (!tempCtx) continue
 
-      if (ctx) {
-        ctx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
+      tempCanvas.width = area.width
+      tempCanvas.height = area.height
 
-        // Convert to blob and add to ZIP
-        const blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => {
-            resolve(blob!)
-          }, "image/png")
-        })
+      // Dibujar el sprite recortado
+      tempCtx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
 
-        const fileName = area.name.endsWith(".png") ? area.name : `${area.name}.png`
-        zip.file(fileName, blob)
+      // Convertir a blob y agregar al ZIP
+      const blob = await new Promise<Blob | null>((resolve) => {
+        tempCanvas.toBlob(resolve, "image/png")
+      })
+
+      if (blob) {
+        zip.file(`${area.name}.png`, blob)
       }
     }
 
-    // Generate and download ZIP
-    const content = await zip.generateAsync({ type: "blob" })
-    const url = URL.createObjectURL(content)
+    // Generar y descargar el ZIP
+    const zipBlob = await zip.generateAsync({ type: "blob" })
+    const url = URL.createObjectURL(zipBlob)
     const a = document.createElement("a")
     a.href = url
     a.download = `sprites_collection.zip`
@@ -751,7 +741,7 @@ export default function SpriteCutter() {
     [loadImageFile],
   )
 
-  // Functions to handle name editing
+  // Funciones para manejar la edición de nombres
   const handleStartEdit = useCallback((id: string, name: string) => {
     setEditingId(id)
     setEditingName(name)
@@ -784,13 +774,13 @@ export default function SpriteCutter() {
             {image && (
               <Button onClick={resetAll} variant="outline" size="sm" className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" />
-                Load Another
+                Cargar Otro
               </Button>
             )}
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload Section - Only shown if no image */}
+          {/* Upload Section - Solo se muestra si no hay imagen */}
           {!image && (
             <div
               ref={dropZoneRef}
@@ -799,7 +789,7 @@ export default function SpriteCutter() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <Label htmlFor="image-upload">Upload Image</Label>
+              <Label htmlFor="image-upload">Subir Imagen</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors ${
                   isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
@@ -807,9 +797,9 @@ export default function SpriteCutter() {
               >
                 <Upload className={`w-12 h-12 mb-4 ${isDragging ? "text-blue-500" : "text-gray-400"}`} />
                 <p className="text-lg mb-2 font-medium">
-                  {isDragging ? "Drop image here" : "Drag and drop an image here"}
+                  {isDragging ? "Suelta la imagen aquí" : "Arrastra y suelta una imagen aquí"}
                 </p>
-                <p className="text-sm text-gray-500 mb-4">or</p>
+                <p className="text-sm text-gray-500 mb-4">o</p>
                 <div className="flex items-center gap-4">
                   <Input
                     id="image-upload"
@@ -825,7 +815,7 @@ export default function SpriteCutter() {
                     className="flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
-                    Select File
+                    Seleccionar Archivo
                   </Button>
                 </div>
               </div>
@@ -847,8 +837,8 @@ export default function SpriteCutter() {
               </div>
 
               <div className="text-sm text-gray-600 text-center space-y-1">
-                <div>🔴 Red: Creating new • 🔵 Blue: Normal • 🟠 Orange: Active (always on top)</div>
-                <div>Click on an area to activate it • Click on empty space to deactivate</div>
+                <div>🔴 Rojo: Creando nuevo • 🔵 Azul: Normal • 🟠 Naranja: Activo (siempre arriba)</div>
+                <div>Haz clic en un área para activarla • Haz clic en vacío para desactivar</div>
               </div>
             </div>
           )}
@@ -857,7 +847,7 @@ export default function SpriteCutter() {
           {cropAreas.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Crop Areas ({cropAreas.length})</h3>
+                <h3 className="text-lg font-semibold">Áreas de Recorte ({cropAreas.length})</h3>
                 <div className="flex gap-2">
                   <Button
                     onClick={downloadCrops}
@@ -866,12 +856,12 @@ export default function SpriteCutter() {
                   >
                     <Download className="w-4 h-4" />
                     {downloadProgress.isDownloading
-                      ? `Processing ${downloadProgress.current}/${downloadProgress.total} sprites...`
-                      : "Download ZIP with All"}
+                      ? `Procesando ${downloadProgress.current}/${downloadProgress.total} sprites...`
+                      : "Descargar ZIP con Todos"}
                   </Button>
                   <Button onClick={clearAll} variant="outline" className="flex items-center gap-2">
                     <Trash2 className="w-4 h-4" />
-                    Clear All
+                    Limpiar Todo
                   </Button>
                 </div>
               </div>
