@@ -1,26 +1,27 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { Analytics } from "@vercel/analytics/react"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://sprite-cutter.vercel.app'),
   title: {
-    default: "Sprite Cutter - Herramienta Online para Recortar Sprites",
+    default: "Sprite Cutter - Online Tool for Cutting Sprites",
     template: "%s | Sprite Cutter",
   },
   description:
-    "Herramienta gratuita online para recortar sprites de imágenes. Sube tu imagen, marca las áreas que quieres recortar y descarga todos los sprites por separado. Perfecto para desarrolladores de videojuegos y diseñadores.",
+    "Free online tool for cutting sprites from images. Upload your image, mark the areas you want to cut, and download all sprites separately. Perfect for game developers and designers.",
   keywords: [
     "sprite cutter",
-    "recortar sprites",
-    "herramienta sprites",
+    "cut sprites",
+    "sprite tool",
     "game development",
     "pixel art",
     "sprite sheet",
-    "recortar imágenes",
-    "desarrollo videojuegos",
-    "sprites online",
+    "cut images",
+    "video game development",
+    "online sprites",
     "sprite editor",
   ],
   authors: [{ name: "Sprite Cutter Team" }],
@@ -39,26 +40,26 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "es_ES",
+    locale: "en_US",
     url: "https://sprite-cutter.vercel.app",
-    title: "Sprite Cutter - Herramienta Online para Recortar Sprites",
+    title: "Sprite Cutter - Online Tool for Cutting Sprites",
     description:
-      "Herramienta gratuita para recortar sprites de imágenes. Marca áreas, ve previews y descarga todos los sprites por separado.",
+      "Free tool for cutting sprites from images. Mark areas, see previews, and download all sprites separately.",
     siteName: "Sprite Cutter",
     images: [
       {
         url: "/placeholder.svg?height=630&width=1200",
         width: 1200,
         height: 630,
-        alt: "Sprite Cutter - Interfaz de la herramienta para recortar sprites",
+        alt: "Sprite Cutter - Interface of the tool for cutting sprites",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sprite Cutter - Herramienta Online para Recortar Sprites",
+    title: "Sprite Cutter - Online Tool for Cutting Sprites",
     description:
-      "Herramienta gratuita para recortar sprites. Sube imágenes, marca áreas y descarga sprites individuales.",
+      "Free tool for cutting sprites. Upload images, mark areas, and download individual sprites.",
     images: ["/placeholder.svg?height=630&width=1200"],
     creator: "@vercel",
   },
@@ -71,17 +72,6 @@ export const metadata: Metadata = {
   category: "technology",
   classification: "Game Development Tool",
   referrer: "origin-when-cross-origin",
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   verification: {
     google: "google-site-verification-code",
     yandex: "yandex-verification-code",
@@ -89,8 +79,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://sprite-cutter.vercel.app",
     languages: {
-      "es-ES": "https://sprite-cutter.vercel.app",
-      "en-US": "https://sprite-cutter.vercel.app/en",
+      "en-US": "https://sprite-cutter.vercel.app",
+      "es-ES": "https://sprite-cutter.vercel.app/es",
     },
   },
   other: {
@@ -104,7 +94,19 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#3b82f6",
     "msapplication-tap-highlight": "no",
   },
-    generator: 'v0.dev'
+  generator: 'v0.dev'
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 }
 
 export default function RootLayout({
