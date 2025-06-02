@@ -119,8 +119,8 @@ export default function RootLayout({
       <body>
         <Suspense>
           {children}
-          <Analytics />
         </Suspense>
+        <Analytics />
       </body>
     </html>
   )
