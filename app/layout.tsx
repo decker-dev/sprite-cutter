@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     siteName: "Sprite Cutter",
     images: [
       {
-        url: "/placeholder.svg?height=630&width=1200",
+        url: "/api/og",
         width: 1200,
         height: 630,
         alt: "Sprite Cutter - Interface of the tool for cutting sprites",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: "Sprite Cutter - Online Tool for Cutting Sprites",
     description:
       "Free tool for cutting sprites. Upload images, mark areas, and download individual sprites.",
-    images: ["/placeholder.svg?height=630&width=1200"],
+    images: ["/api/og"],
     creator: "@vercel",
   },
   icons: {
