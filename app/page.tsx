@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Trash2, Download, Upload, Scissors, Edit } from "lucide-react"
+import { Trash2, Download, Upload, Scissors, Edit, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import JSZip from "jszip"
 
@@ -178,6 +178,21 @@ export default function SpriteCutter() {
       drawCanvas(img, [])
     }
     img.src = URL.createObjectURL(file)
+  }, [])
+
+  const resetAll = useCallback(() => {
+    setImage(null)
+    setCropAreas([])
+    setIsDrawing(false)
+    setCurrentArea(null)
+    setEditingId(null)
+    setEditingName("")
+    setDownloadProgress({ isDownloading: false, current: 0, total: 0 })
+
+    // Limpiar el input file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }, [])
 
   const drawCanvas = useCallback((img: HTMLImageElement, areas: CropArea[], tempArea?: CropArea) => {
@@ -439,51 +454,61 @@ export default function SpriteCutter() {
     <div className="container mx-auto p-4 max-w-6xl">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scissors className="w-6 h-6" />
-            Sprite Cutter
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Scissors className="w-6 h-6" />
+              Sprite Cutter
+            </CardTitle>
+            {image && (
+              <Button onClick={resetAll} variant="outline" size="sm" className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Cargar Otro
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload Section */}
-          <div
-            ref={dropZoneRef}
-            className={`space-y-2 ${isDragging ? "ring-2 ring-blue-500 bg-blue-50" : ""}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <Label htmlFor="image-upload">Subir Imagen</Label>
+          {/* Upload Section - Solo se muestra si no hay imagen */}
+          {!image && (
             <div
-              className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors ${
-                isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-              }`}
+              ref={dropZoneRef}
+              className={`space-y-2 ${isDragging ? "ring-2 ring-blue-500 bg-blue-50" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
-              <Upload className={`w-12 h-12 mb-4 ${isDragging ? "text-blue-500" : "text-gray-400"}`} />
-              <p className="text-lg mb-2 font-medium">
-                {isDragging ? "Suelta la imagen aquí" : "Arrastra y suelta una imagen aquí"}
-              </p>
-              <p className="text-sm text-gray-500 mb-4">o</p>
-              <div className="flex items-center gap-4">
-                <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  ref={fileInputRef}
-                  className="hidden"
-                />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  Seleccionar Archivo
-                </Button>
+              <Label htmlFor="image-upload">Subir Imagen</Label>
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors ${
+                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                }`}
+              >
+                <Upload className={`w-12 h-12 mb-4 ${isDragging ? "text-blue-500" : "text-gray-400"}`} />
+                <p className="text-lg mb-2 font-medium">
+                  {isDragging ? "Suelta la imagen aquí" : "Arrastra y suelta una imagen aquí"}
+                </p>
+                <p className="text-sm text-gray-500 mb-4">o</p>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    ref={fileInputRef}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Seleccionar Archivo
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Canvas Section */}
           {image && (
