@@ -789,7 +789,7 @@ export default function SpriteCutter() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <Label htmlFor="image-upload">Subir Imagen</Label>
+              <Label htmlFor="image-upload">Upload Image</Label>
               <div
                 className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors ${
                   isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
@@ -797,7 +797,7 @@ export default function SpriteCutter() {
               >
                 <Upload className={`w-12 h-12 mb-4 ${isDragging ? "text-blue-500" : "text-gray-400"}`} />
                 <p className="text-lg mb-2 font-medium">
-                  {isDragging ? "Suelta la imagen aquí" : "Arrastra y suelta una imagen aquí"}
+                  {isDragging ? "Drop the image here" : "Drag and drop an image here"}
                 </p>
                 <p className="text-sm text-gray-500 mb-4">o</p>
                 <div className="flex items-center gap-4">
@@ -815,7 +815,7 @@ export default function SpriteCutter() {
                     className="flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
-                    Seleccionar Archivo
+                    Select File
                   </Button>
                 </div>
               </div>
@@ -837,8 +837,8 @@ export default function SpriteCutter() {
               </div>
 
               <div className="text-sm text-gray-600 text-center space-y-1">
-                <div>🔴 Rojo: Creando nuevo • 🔵 Azul: Normal • 🟠 Naranja: Activo (siempre arriba)</div>
-                <div>Haz clic en un área para activarla • Haz clic en vacío para desactivar</div>
+                <div>🔴 Red: Creating new • 🔵 Blue: Normal • 🟠 Orange: Active (always on top)</div>
+                <div>Click on an area to activate it • Click on empty to deactivate</div>
               </div>
             </div>
           )}
@@ -847,7 +847,7 @@ export default function SpriteCutter() {
           {cropAreas.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Áreas de Recorte ({cropAreas.length})</h3>
+                <h3 className="text-lg font-semibold">Crop Areas ({cropAreas.length})</h3>
                 <div className="flex gap-2">
                   <Button
                     onClick={downloadCrops}
@@ -856,12 +856,12 @@ export default function SpriteCutter() {
                   >
                     <Download className="w-4 h-4" />
                     {downloadProgress.isDownloading
-                      ? `Procesando ${downloadProgress.current}/${downloadProgress.total} sprites...`
-                      : "Descargar ZIP con Todos"}
+                      ? `Processing ${downloadProgress.current}/${downloadProgress.total} sprites...`
+                      : "Download ZIP with All"}
                   </Button>
                   <Button onClick={clearAll} variant="outline" className="flex items-center gap-2">
                     <Trash2 className="w-4 h-4" />
-                    Limpiar Todo
+                    Clear All
                   </Button>
                 </div>
               </div>
