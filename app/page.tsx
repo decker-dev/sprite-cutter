@@ -20,6 +20,18 @@ interface CropArea {
   name: string
 }
 
+type InteractionMode =
+  | "create"
+  | "move"
+  | "resize-nw"
+  | "resize-ne"
+  | "resize-sw"
+  | "resize-se"
+  | "resize-n"
+  | "resize-s"
+  | "resize-w"
+  | "resize-e"
+
 // Componente memoizado para cada sprite card
 const SpriteCard = memo(
   ({
@@ -157,6 +169,11 @@ export default function SpriteCutter() {
     total: 0,
   })
   const [isDragging, setIsDragging] = useState(false)
+  const [interactionMode, setInteractionMode] = useState<InteractionMode>("create")
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null)
+  const [activeAreaId, setActiveAreaId] = useState<string | null>(null) // Área que se mantiene naranja
+  const [originalArea, setOriginalArea] = useState<CropArea | null>(null)
+  const [isModifying, setIsModifying] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -188,6 +205,10 @@ export default function SpriteCutter() {
     setEditingId(null)
     setEditingName("")
     setDownloadProgress({ isDownloading: false, current: 0, total: 0 })
+    setSelectedAreaId(null)
+    setActiveAreaId(null)
+    setOriginalArea(null)
+    setIsModifying(false)
 
     // Limpiar el input file
     if (fileInputRef.current) {
@@ -195,73 +216,246 @@ export default function SpriteCutter() {
     }
   }, [])
 
-  const drawCanvas = useCallback((img: HTMLImageElement, areas: CropArea[], tempArea?: CropArea) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+  // Función para detectar en qué parte del recuadro se hizo clic
+  const getInteractionMode = useCallback(
+    (point: { x: number; y: number }, areas: CropArea[]): { mode: InteractionMode; areaId: string | null } => {
+      const handleSize = 8 / scale // Tamaño de los handles de redimensionamiento
 
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+      // Buscar en orden de prioridad: activa -> seleccionada -> resto
+      const sortedAreas = [...areas].sort((a, b) => {
+        if (a.id === activeAreaId) return -1
+        if (b.id === activeAreaId) return 1
+        if (a.id === selectedAreaId) return -1
+        if (b.id === selectedAreaId) return 1
+        return 0
+      })
 
-    // Calculate scale to fit image in canvas
-    const maxWidth = 800
-    const maxHeight = 600
-    const imageAspect = img.width / img.height
-    const canvasAspect = maxWidth / maxHeight
+      for (const area of sortedAreas) {
+        const { x, y, width, height } = area
 
-    let newScale = 1
-    if (imageAspect > canvasAspect) {
-      newScale = maxWidth / img.width
-    } else {
-      newScale = maxHeight / img.height
-    }
+        // Verificar handles de las esquinas
+        if (
+          point.x >= x - handleSize &&
+          point.x <= x + handleSize &&
+          point.y >= y - handleSize &&
+          point.y <= y + handleSize
+        ) {
+          return { mode: "resize-nw", areaId: area.id }
+        }
+        if (
+          point.x >= x + width - handleSize &&
+          point.x <= x + width + handleSize &&
+          point.y >= y - handleSize &&
+          point.y <= y + handleSize
+        ) {
+          return { mode: "resize-ne", areaId: area.id }
+        }
+        if (
+          point.x >= x - handleSize &&
+          point.x <= x + handleSize &&
+          point.y >= y + height - handleSize &&
+          point.y <= y + height + handleSize
+        ) {
+          return { mode: "resize-sw", areaId: area.id }
+        }
+        if (
+          point.x >= x + width - handleSize &&
+          point.x <= x + width + handleSize &&
+          point.y >= y + height - handleSize &&
+          point.y <= y + height + handleSize
+        ) {
+          return { mode: "resize-se", areaId: area.id }
+        }
 
-    setScale(newScale)
+        // Verificar handles de los bordes
+        if (
+          point.x >= x - handleSize &&
+          point.x <= x + width + handleSize &&
+          point.y >= y - handleSize &&
+          point.y <= y + handleSize
+        ) {
+          return { mode: "resize-n", areaId: area.id }
+        }
+        if (
+          point.x >= x - handleSize &&
+          point.x <= x + width + handleSize &&
+          point.y >= y + height - handleSize &&
+          point.y <= y + height + handleSize
+        ) {
+          return { mode: "resize-s", areaId: area.id }
+        }
+        if (
+          point.x >= x - handleSize &&
+          point.x <= x + handleSize &&
+          point.y >= y - handleSize &&
+          point.y <= y + height + handleSize
+        ) {
+          return { mode: "resize-w", areaId: area.id }
+        }
+        if (
+          point.x >= x + width - handleSize &&
+          point.x <= x + width + handleSize &&
+          point.y >= y - handleSize &&
+          point.y <= y + height + handleSize
+        ) {
+          return { mode: "resize-e", areaId: area.id }
+        }
 
-    const scaledWidth = img.width * newScale
-    const scaledHeight = img.height * newScale
+        // Verificar si está dentro del área (para mover)
+        if (point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height) {
+          return { mode: "move", areaId: area.id }
+        }
+      }
 
-    canvas.width = scaledWidth
-    canvas.height = scaledHeight
+      return { mode: "create", areaId: null }
+    },
+    [scale, activeAreaId, selectedAreaId],
+  )
 
-    // Clear and draw image
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
+  // Función para obtener el cursor apropiado
+  const getCursor = useCallback(
+    (point: { x: number; y: number }, areas: CropArea[]): string => {
+      const { mode } = getInteractionMode(point, areas)
 
-    // Draw existing crop areas
-    areas.forEach((area, index) => {
-      ctx.strokeStyle = "#3b82f6"
-      ctx.fillStyle = "rgba(59, 130, 246, 0.2)"
-      ctx.lineWidth = 2
+      switch (mode) {
+        case "resize-nw":
+        case "resize-se":
+          return "nw-resize"
+        case "resize-ne":
+        case "resize-sw":
+          return "ne-resize"
+        case "resize-n":
+        case "resize-s":
+          return "ns-resize"
+        case "resize-w":
+        case "resize-e":
+          return "ew-resize"
+        case "move":
+          return "move"
+        default:
+          return "crosshair"
+      }
+    },
+    [getInteractionMode],
+  )
 
-      const x = area.x * newScale
-      const y = area.y * newScale
-      const width = area.width * newScale
-      const height = area.height * newScale
+  const drawCanvas = useCallback(
+    (img: HTMLImageElement, areas: CropArea[], tempArea?: CropArea) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
 
-      ctx.fillRect(x, y, width, height)
-      ctx.strokeRect(x, y, width, height)
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
 
-      // Draw area number
-      ctx.fillStyle = "#3b82f6"
-      ctx.font = "16px sans-serif"
-      ctx.fillText(`${index + 1}`, x + 5, y + 20)
-    })
+      // Calculate scale to fit image in canvas
+      const maxWidth = 800
+      const maxHeight = 600
+      const imageAspect = img.width / img.height
+      const canvasAspect = maxWidth / maxHeight
 
-    // Draw temporary area while drawing
-    if (tempArea) {
-      ctx.strokeStyle = "#ef4444"
-      ctx.fillStyle = "rgba(239, 68, 68, 0.2)"
-      ctx.lineWidth = 2
+      let newScale = 1
+      if (imageAspect > canvasAspect) {
+        newScale = maxWidth / img.width
+      } else {
+        newScale = maxHeight / img.height
+      }
 
-      const x = tempArea.x * newScale
-      const y = tempArea.y * newScale
-      const width = tempArea.width * newScale
-      const height = tempArea.height * newScale
+      setScale(newScale)
 
-      ctx.fillRect(x, y, width, height)
-      ctx.strokeRect(x, y, width, height)
-    }
-  }, [])
+      const scaledWidth = img.width * newScale
+      const scaledHeight = img.height * newScale
+
+      canvas.width = scaledWidth
+      canvas.height = scaledHeight
+
+      // Clear and draw image
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
+
+      // Función para dibujar un área
+      const drawArea = (area: CropArea, index: number, color: "blue" | "orange" | "red") => {
+        const colors = {
+          blue: { stroke: "#3b82f6", fill: "rgba(59, 130, 246, 0.2)" },
+          orange: { stroke: "#f97316", fill: "rgba(249, 115, 22, 0.2)" },
+          red: { stroke: "#ef4444", fill: "rgba(239, 68, 68, 0.2)" },
+        }
+
+        ctx.strokeStyle = colors[color].stroke
+        ctx.fillStyle = colors[color].fill
+        ctx.lineWidth = 2
+
+        const x = area.x * newScale
+        const y = area.y * newScale
+        const width = area.width * newScale
+        const height = area.height * newScale
+
+        ctx.fillRect(x, y, width, height)
+        ctx.strokeRect(x, y, width, height)
+
+        // Draw area number
+        ctx.fillStyle = colors[color].stroke
+        ctx.font = "16px sans-serif"
+        ctx.fillText(`${index + 1}`, x + 5, y + 20)
+
+        // Draw resize handles if selected or active
+        if (color === "blue" || color === "orange") {
+          const handleSize = 6
+          ctx.fillStyle = colors[color].stroke
+
+          // Corner handles
+          ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
+          ctx.fillRect(x + width - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
+          ctx.fillRect(x - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
+          ctx.fillRect(x + width - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
+
+          // Edge handles
+          ctx.fillRect(x + width / 2 - handleSize / 2, y - handleSize / 2, handleSize, handleSize)
+          ctx.fillRect(x + width / 2 - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize)
+          ctx.fillRect(x - handleSize / 2, y + height / 2 - handleSize / 2, handleSize, handleSize)
+          ctx.fillRect(x + width - handleSize / 2, y + height / 2 - handleSize / 2, handleSize, handleSize)
+        }
+      }
+
+      // Separar áreas por estado para controlar el orden de renderizado
+      const normalAreas: { area: CropArea; index: number }[] = []
+      const selectedArea: { area: CropArea; index: number } | null = selectedAreaId
+        ? { area: areas.find((a) => a.id === selectedAreaId)!, index: areas.findIndex((a) => a.id === selectedAreaId) }
+        : null
+      const activeArea: { area: CropArea; index: number } | null = activeAreaId
+        ? { area: areas.find((a) => a.id === activeAreaId)!, index: areas.findIndex((a) => a.id === activeAreaId) }
+        : null
+
+      // Agregar áreas normales (no seleccionadas ni activas)
+      areas.forEach((area, index) => {
+        if (area.id !== selectedAreaId && area.id !== activeAreaId) {
+          normalAreas.push({ area, index })
+        }
+      })
+
+      // Dibujar en orden: normales -> seleccionada -> activa
+      normalAreas.forEach(({ area, index }) => {
+        drawArea(area, index, "blue")
+      })
+
+      if (selectedArea && selectedArea.area.id !== activeAreaId) {
+        drawArea(selectedArea.area, selectedArea.index, "blue")
+      }
+
+      if (activeArea) {
+        drawArea(activeArea.area, activeArea.index, "orange")
+      }
+
+      // Draw temporary area while creating (always red and on top)
+      if (tempArea) {
+        drawArea(
+          tempArea,
+          areas.length, // Número temporal para el área nueva
+          "red",
+        )
+      }
+    },
+    [selectedAreaId, activeAreaId],
+  )
 
   useEffect(() => {
     if (image) {
@@ -288,58 +482,173 @@ export default function SpriteCutter() {
       if (!image) return
 
       const point = getCanvasCoordinates(event)
+      const { mode, areaId } = getInteractionMode(point, cropAreas)
+
+      setInteractionMode(mode)
+      setSelectedAreaId(areaId)
       setIsDrawing(true)
       setStartPoint(point)
-      setCurrentArea(null)
+
+      if (areaId) {
+        const area = cropAreas.find((a) => a.id === areaId)
+        if (area) {
+          setOriginalArea({ ...area })
+          setIsModifying(true)
+          // Si hacemos clic en un área diferente a la activa, la nueva se vuelve activa
+          if (areaId !== activeAreaId) {
+            setActiveAreaId(areaId)
+          }
+        }
+      } else {
+        // Click en área vacía - desactivar área activa
+        setActiveAreaId(null)
+        setCurrentArea(null)
+        setOriginalArea(null)
+        setIsModifying(false)
+      }
     },
-    [image, getCanvasCoordinates],
+    [image, getCanvasCoordinates, getInteractionMode, cropAreas, activeAreaId],
   )
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!isDrawing || !image) return
+      if (!image) return
 
       const point = getCanvasCoordinates(event)
-      const width = Math.abs(point.x - startPoint.x)
-      const height = Math.abs(point.y - startPoint.y)
-      const x = Math.min(startPoint.x, point.x)
-      const y = Math.min(startPoint.y, point.y)
 
-      const tempArea: CropArea = {
-        id: "",
-        x,
-        y,
-        width,
-        height,
-        name: "",
+      // Actualizar cursor
+      const canvas = canvasRef.current
+      if (canvas) {
+        canvas.style.cursor = getCursor(point, cropAreas)
       }
 
-      setCurrentArea(tempArea)
-      drawCanvas(image, cropAreas, tempArea)
+      if (!isDrawing) return
+
+      if (interactionMode === "create") {
+        // Crear nueva área - esto desactiva el área activa
+        setActiveAreaId(null)
+
+        const width = Math.abs(point.x - startPoint.x)
+        const height = Math.abs(point.y - startPoint.y)
+        const x = Math.min(startPoint.x, point.x)
+        const y = Math.min(startPoint.y, point.y)
+
+        const tempArea: CropArea = {
+          id: "",
+          x,
+          y,
+          width,
+          height,
+          name: "",
+        }
+
+        setCurrentArea(tempArea)
+        drawCanvas(image, cropAreas, tempArea)
+      } else if (selectedAreaId && originalArea) {
+        // Modificar área existente
+        const deltaX = point.x - startPoint.x
+        const deltaY = point.y - startPoint.y
+
+        const newArea = { ...originalArea }
+
+        switch (interactionMode) {
+          case "move":
+            newArea.x = originalArea.x + deltaX
+            newArea.y = originalArea.y + deltaY
+            break
+          case "resize-nw":
+            newArea.x = originalArea.x + deltaX
+            newArea.y = originalArea.y + deltaY
+            newArea.width = originalArea.width - deltaX
+            newArea.height = originalArea.height - deltaY
+            break
+          case "resize-ne":
+            newArea.y = originalArea.y + deltaY
+            newArea.width = originalArea.width + deltaX
+            newArea.height = originalArea.height - deltaY
+            break
+          case "resize-sw":
+            newArea.x = originalArea.x + deltaX
+            newArea.width = originalArea.width - deltaX
+            newArea.height = originalArea.height + deltaY
+            break
+          case "resize-se":
+            newArea.width = originalArea.width + deltaX
+            newArea.height = originalArea.height + deltaY
+            break
+          case "resize-n":
+            newArea.y = originalArea.y + deltaY
+            newArea.height = originalArea.height - deltaY
+            break
+          case "resize-s":
+            newArea.height = originalArea.height + deltaY
+            break
+          case "resize-w":
+            newArea.x = originalArea.x + deltaX
+            newArea.width = originalArea.width - deltaX
+            break
+          case "resize-e":
+            newArea.width = originalArea.width + deltaX
+            break
+        }
+
+        // Asegurar dimensiones mínimas
+        if (newArea.width < 10) newArea.width = 10
+        if (newArea.height < 10) newArea.height = 10
+
+        // Actualizar el área en el estado
+        setCropAreas((prev) => prev.map((area) => (area.id === selectedAreaId ? newArea : area)))
+      }
     },
-    [isDrawing, image, getCanvasCoordinates, startPoint, drawCanvas, cropAreas],
+    [
+      image,
+      getCanvasCoordinates,
+      getCursor,
+      cropAreas,
+      isDrawing,
+      interactionMode,
+      selectedAreaId,
+      originalArea,
+      startPoint,
+      drawCanvas,
+    ],
   )
 
   const handleMouseUp = useCallback(() => {
-    if (!isDrawing || !currentArea || !image) return
+    if (!isDrawing) return
 
-    // Only add area if it has meaningful size
-    if (currentArea.width > 10 && currentArea.height > 10) {
-      const newArea: CropArea = {
-        ...currentArea,
-        id: Date.now().toString(),
-        name: `sprite_${cropAreas.length + 1}`,
+    if (interactionMode === "create" && currentArea && image) {
+      // Solo agregar área si tiene tamaño significativo
+      if (currentArea.width > 10 && currentArea.height > 10) {
+        const newArea: CropArea = {
+          ...currentArea,
+          id: Date.now().toString(),
+          name: `sprite_${cropAreas.length + 1}`,
+        }
+        setCropAreas((prev) => [...prev, newArea])
+        // El área recién creada se vuelve activa
+        setActiveAreaId(newArea.id)
       }
-      setCropAreas((prev) => [...prev, newArea])
+      setCurrentArea(null)
     }
 
     setIsDrawing(false)
-    setCurrentArea(null)
-  }, [isDrawing, currentArea, image, cropAreas.length])
+    setIsModifying(false)
+    setOriginalArea(null)
+  }, [isDrawing, interactionMode, currentArea, image, cropAreas.length])
 
-  const deleteCropArea = useCallback((id: string) => {
-    setCropAreas((prev) => prev.filter((area) => area.id !== id))
-  }, [])
+  const deleteCropArea = useCallback(
+    (id: string) => {
+      setCropAreas((prev) => prev.filter((area) => area.id !== id))
+      if (selectedAreaId === id) {
+        setSelectedAreaId(null)
+      }
+      if (activeAreaId === id) {
+        setActiveAreaId(null)
+      }
+    },
+    [selectedAreaId, activeAreaId],
+  )
 
   const downloadCrops = useCallback(async () => {
     if (!image || cropAreas.length === 0) return
@@ -394,6 +703,9 @@ export default function SpriteCutter() {
 
   const clearAll = useCallback(() => {
     setCropAreas([])
+    setSelectedAreaId(null)
+    setActiveAreaId(null)
+    setIsModifying(false)
     if (image) {
       drawCanvas(image, [])
     }
@@ -519,12 +831,15 @@ export default function SpriteCutter() {
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
-                  className="border border-gray-300 cursor-crosshair max-w-full"
+                  className="border border-gray-300 max-w-full"
                   style={{ display: "block", margin: "0 auto" }}
                 />
               </div>
 
-              <div className="text-sm text-gray-600 text-center">Haz clic y arrastra para marcar áreas de recorte</div>
+              <div className="text-sm text-gray-600 text-center space-y-1">
+                <div>🔴 Rojo: Creando nuevo • 🔵 Azul: Normal • 🟠 Naranja: Activo (siempre arriba)</div>
+                <div>Haz clic en un área para activarla • Haz clic en vacío para desactivar</div>
+              </div>
             </div>
           )}
 
