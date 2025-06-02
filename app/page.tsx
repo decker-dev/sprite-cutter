@@ -774,7 +774,7 @@ export default function SpriteCutter() {
             {image && (
               <Button onClick={resetAll} variant="outline" size="sm" className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" />
-                Cargar Otro
+                Reset
               </Button>
             )}
           </div>
