@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Trash2, Download, Upload, Scissors, Edit, RotateCcw } from "lucide-react"
+import { Trash2, Download, Upload, Scissors, Edit, RotateCcw, Github } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import JSZip from "jszip"
 
@@ -887,6 +887,23 @@ export default function SpriteCutter() {
           )}
         </CardContent>
       </Card>
+      
+      {/* GitHub Button - Fixed position at bottom right */}
+      <a
+        href="https://github.com/decker-dev/sprite-cutter"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50"
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2 bg-white shadow-lg hover:shadow-xl transition-shadow border-gray-300 hover:border-gray-400"
+        >
+          <Github className="w-4 h-4" />
+          GitHub
+        </Button>
+      </a>
     </div>
   )
 }
