@@ -11,6 +11,7 @@ import { Trash2, Download, Upload, Scissors, Edit, RotateCcw, Github, Grid3X3, G
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import ImageUploader from "@/components/image-uploader"
+import { toast } from "sonner"
 
 import JSZip from "jszip"
 
@@ -196,6 +197,15 @@ export default function SpriteCutter() {
       setImage(img)
       setCropAreas([])
       drawCanvas(img, [])
+      
+      toast.success("Imagen cargada exitosamente", {
+        description: `${file.name} - ${img.width}x${img.height}px`
+      })
+    }
+    img.onerror = () => {
+      toast.error("Error al cargar la imagen", {
+        description: "Asegúrate de que el archivo sea una imagen válida"
+      })
     }
     img.src = URL.createObjectURL(file)
   }, [])
@@ -532,11 +542,15 @@ export default function SpriteCutter() {
   const createGrid = useCallback(
     (areaId: string, rows: number, cols: number) => {
       const area = cropAreas.find(a => a.id === areaId)
-      if (!area) return
+      if (!area) {
+        toast.error("No se pudo encontrar el área seleccionada")
+        return
+      }
 
       const cellWidth = area.width / cols
       const cellHeight = area.height / rows
       const newAreas: CropArea[] = []
+      const totalSprites = rows * cols
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
@@ -567,6 +581,11 @@ export default function SpriteCutter() {
       }
       setContextMenuAreaId(null)
       setShowContextMenu(false)
+
+      // Toast de éxito
+      toast.success(`Grilla ${rows}x${cols} creada`, {
+        description: `Se generaron ${totalSprites} sprites de ${Math.round(cellWidth)}x${Math.round(cellHeight)}px`
+      })
     },
     [cropAreas, selectedAreaId, activeAreaId],
   )
@@ -757,6 +776,15 @@ export default function SpriteCutter() {
         setCropAreas((prev) => [...prev, newArea])
         // El área recién creada se vuelve activa
         setActiveAreaId(newArea.id)
+        
+        // Toast de confirmación
+        toast.success("Nuevo sprite creado", {
+          description: `"${newArea.name}" - ${Math.round(newArea.width)}x${Math.round(newArea.height)}px`
+        })
+      } else if (currentArea.width <= 10 || currentArea.height <= 10) {
+        toast.warning("Sprite muy pequeño", {
+          description: "El área debe ser más grande para crear un sprite"
+        })
       }
       setCurrentArea(null)
     }
@@ -768,6 +796,9 @@ export default function SpriteCutter() {
 
   const deleteCropArea = useCallback(
     (id: string) => {
+      const areaToDelete = cropAreas.find(area => area.id === id)
+      if (!areaToDelete) return
+
       setCropAreas((prev) => prev.filter((area) => area.id !== id))
       if (selectedAreaId === id) {
         setSelectedAreaId(null)
@@ -775,62 +806,109 @@ export default function SpriteCutter() {
       if (activeAreaId === id) {
         setActiveAreaId(null)
       }
+
+      toast.success("Sprite eliminado", {
+        description: `Se eliminó "${areaToDelete.name}"`
+      })
     },
-    [selectedAreaId, activeAreaId],
+    [selectedAreaId, activeAreaId, cropAreas],
   )
 
   const downloadCrops = useCallback(async () => {
-    if (!image || cropAreas.length === 0) return
-
-    setDownloadProgress({ isDownloading: true, current: 0, total: cropAreas.length })
-
-    // Crear un solo ZIP con todos los sprites
-    const zip = new JSZip()
-
-    // Agregar cada sprite al ZIP
-    for (let i = 0; i < cropAreas.length; i++) {
-      const area = cropAreas[i]
-
-      // Actualizar progreso
-      setDownloadProgress({ isDownloading: true, current: i + 1, total: cropAreas.length })
-
-      // Crear canvas temporal para el sprite
-      const tempCanvas = document.createElement("canvas")
-      const tempCtx = tempCanvas.getContext("2d")
-      if (!tempCtx) continue
-
-      tempCanvas.width = area.width
-      tempCanvas.height = area.height
-
-      // Dibujar el sprite recortado
-      tempCtx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
-
-      // Convertir a blob y agregar al ZIP
-      const blob = await new Promise<Blob | null>((resolve) => {
-        tempCanvas.toBlob(resolve, "image/png")
-      })
-
-      if (blob) {
-        zip.file(`${area.name}.png`, blob)
-      }
+    if (!image || cropAreas.length === 0) {
+      toast.error("No hay sprites para descargar")
+      return
     }
 
-    // Generar y descargar el ZIP
-    const zipBlob = await zip.generateAsync({ type: "blob" })
-    const url = URL.createObjectURL(zipBlob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `sprites_collection.zip`
-    a.style.display = "none"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    // Toast de inicio de descarga
+    const loadingToast = toast.loading("Preparando descarga...", {
+      description: "Procesando sprites para descarga"
+    })
 
-    setDownloadProgress({ isDownloading: false, current: 0, total: 0 })
+    try {
+      setDownloadProgress({ isDownloading: true, current: 0, total: cropAreas.length })
+
+      // Crear un solo ZIP con todos los sprites
+      const zip = new JSZip()
+
+      // Agregar cada sprite al ZIP
+      for (let i = 0; i < cropAreas.length; i++) {
+        const area = cropAreas[i]
+
+        // Actualizar progreso y toast
+        setDownloadProgress({ isDownloading: true, current: i + 1, total: cropAreas.length })
+        
+        toast.loading(`Procesando sprite ${i + 1} de ${cropAreas.length}...`, {
+          id: loadingToast,
+          description: `Generando: ${area.name}.png`
+        })
+
+        // Crear canvas temporal para el sprite
+        const tempCanvas = document.createElement("canvas")
+        const tempCtx = tempCanvas.getContext("2d")
+        if (!tempCtx) {
+          console.warn(`No se pudo procesar el sprite: ${area.name}`)
+          continue
+        }
+
+        tempCanvas.width = area.width
+        tempCanvas.height = area.height
+
+        // Dibujar el sprite recortado
+        tempCtx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, area.width, area.height)
+
+        // Convertir a blob y agregar al ZIP
+        const blob = await new Promise<Blob | null>((resolve) => {
+          tempCanvas.toBlob(resolve, "image/png")
+        })
+
+        if (blob) {
+          zip.file(`${area.name}.png`, blob)
+        }
+      }
+
+      // Generar ZIP
+      toast.loading("Generando archivo ZIP...", {
+        id: loadingToast,
+        description: "Comprimiendo sprites"
+      })
+
+      const zipBlob = await zip.generateAsync({ type: "blob" })
+      
+      // Descargar archivo
+      const url = URL.createObjectURL(zipBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `sprites_collection.zip`
+      a.style.display = "none"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      // Toast de éxito
+      toast.success("¡Descarga completada!", {
+        id: loadingToast,
+        description: `Se descargaron ${cropAreas.length} sprites en sprites_collection.zip`
+      })
+
+    } catch (error) {
+      console.error("Error durante la descarga:", error)
+      toast.error("Error en la descarga", {
+        id: loadingToast,
+        description: "Hubo un problema al generar los sprites. Inténtalo de nuevo."
+      })
+    } finally {
+      setDownloadProgress({ isDownloading: false, current: 0, total: 0 })
+    }
   }, [image, cropAreas])
 
   const clearAll = useCallback(() => {
+    if (cropAreas.length === 0) {
+      toast.info("No hay áreas para limpiar")
+      return
+    }
+    
     setCropAreas([])
     setSelectedAreaId(null)
     setActiveAreaId(null)
@@ -838,7 +916,11 @@ export default function SpriteCutter() {
     if (image) {
       drawCanvas(image, [])
     }
-  }, [image, drawCanvas])
+    
+    toast.success("Todas las áreas han sido eliminadas", {
+      description: `Se eliminaron ${cropAreas.length} área(s)`
+    })
+  }, [image, drawCanvas, cropAreas.length])
 
 
 

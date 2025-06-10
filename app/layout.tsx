@@ -4,6 +4,7 @@ import "./globals.css"
 import { Analytics } from "@vercel/analytics/react"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://sprite-cutter.vercel.app'),
@@ -124,10 +125,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Suspense>
             {children}
-          </Suspense>
           <Analytics />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
