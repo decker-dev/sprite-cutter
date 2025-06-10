@@ -1,16 +1,15 @@
 "use client"
 
-import React from "react"
+import React, { useRef } from "react"
 import { AlertCircleIcon, ImageUpIcon, XIcon } from "lucide-react"
 import { useFileUpload } from "@/hooks/use-file-upload"
 
 interface ImageUploaderProps {
   onImageSelect: (file: File) => void
-  maxSizeMB?: number
 }
 
-export default function ImageUploader({ onImageSelect, maxSizeMB = 5 }: ImageUploaderProps) {
-  const maxSize = maxSizeMB * 1024 * 1024 // Convert MB to bytes
+export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [
     { files, isDragging, errors },
@@ -25,7 +24,6 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 5 }: ImageUpl
     },
   ] = useFileUpload({
     accept: "image/*",
-    maxSize,
     multiple: false,
   })
 
@@ -44,7 +42,7 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 5 }: ImageUpl
         {/* Drop area */}
         <div
           role="button"
-          onClick={openFileDialog}
+          onClick={() => fileInputRef.current?.click()}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
@@ -54,6 +52,7 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 5 }: ImageUpl
         >
           <input
             {...getInputProps()}
+            ref={fileInputRef}
             className="sr-only"
             aria-label="Upload file"
           />
@@ -77,7 +76,7 @@ export default function ImageUploader({ onImageSelect, maxSizeMB = 5 }: ImageUpl
                 Drop your image here or click to browse
               </p>
               <p className="text-muted-foreground text-xs">
-                Max size: {maxSizeMB}MB
+                Any image size supported
               </p>
             </div>
           )}

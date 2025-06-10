@@ -112,7 +112,7 @@ const SpriteCard = memo(
         </div>
 
         {/* Preview of the cropped area */}
-        <div className="mb-3 border rounded overflow-hidden bg-gray-100">
+        <div className="mb-3 border rounded overflow-hidden bg-background/50">
           <canvas ref={canvasRef} className="w-full h-auto max-w-[120px] max-h-[120px] mx-auto block" />
         </div>
 
@@ -888,28 +888,28 @@ export default function SpriteCutter() {
           {!image && (
             <div className="space-y-2">
               <Label htmlFor="image-upload">Upload Image</Label>
-              <ImageUploader onImageSelect={handleImageSelect} maxSizeMB={5} />
+              <ImageUploader onImageSelect={handleImageSelect} />
             </div>
           )}
 
           {/* Canvas Section with Context Menu */}
           {image && (
             <div className="space-y-4">
-              <div className="border rounded-lg p-4 bg-gray-50 relative">
+              <div className="border rounded-lg p-4 bg-background relative">
                 <canvas
                   ref={canvasRef}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onContextMenu={handleContextMenu}
-                  className="border border-gray-300 max-w-full"
+                  className="border border-border max-w-full rounded"
                   style={{ display: "block", margin: "0 auto" }}
                 />
                 
                 {/* Custom Context Menu */}
                 {showContextMenu && contextMenuAreaId && (
                   <div
-                    className="fixed z-50 min-w-[12rem] bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                    className="fixed z-50 min-w-[12rem] bg-background border border-border rounded-md shadow-lg py-1"
                     style={{
                       left: contextMenuPosition.x,
                       top: contextMenuPosition.y,
@@ -921,7 +921,7 @@ export default function SpriteCutter() {
                         createGrid(contextMenuAreaId, 2, 2)
                         handleCloseContextMenu()
                       }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
                     >
                       <Grid2X2 className="w-4 h-4" />
                       Grid 2x2
@@ -931,7 +931,7 @@ export default function SpriteCutter() {
                         createGrid(contextMenuAreaId, 3, 3)
                         handleCloseContextMenu()
                       }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       Grid 3x3
@@ -941,7 +941,7 @@ export default function SpriteCutter() {
                         createGrid(contextMenuAreaId, 4, 4)
                         handleCloseContextMenu()
                       }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       Grid 4x4
@@ -951,18 +951,18 @@ export default function SpriteCutter() {
                         createGrid(contextMenuAreaId, 5, 5)
                         handleCloseContextMenu()
                       }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       Grid 5x5
                     </button>
-                    <div className="border-t border-gray-200 my-1"></div>
+                    <div className="border-t border-border my-1"></div>
                     <button
                       onClick={() => {
                         createGrid(contextMenuAreaId, 3, 4)
                         handleCloseContextMenu()
                       }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       Grid 3x4
@@ -972,7 +972,7 @@ export default function SpriteCutter() {
                         createGrid(contextMenuAreaId, 4, 3)
                         handleCloseContextMenu()
                       }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
                     >
                       <Grid3X3 className="w-4 h-4" />
                       Grid 4x3
@@ -981,7 +981,7 @@ export default function SpriteCutter() {
                 )}
               </div>
 
-              <div className="text-sm text-gray-600 text-center space-y-1">
+              <div className="text-sm text-muted-foreground text-center space-y-1">
                 <div>🔴 Red: Creating new • 🔵 Blue: Normal • 🟠 Orange: Active (always on top)</div>
                 <div>Click on an area to activate it • Right-click on areas for grid options</div>
               </div>
@@ -1043,7 +1043,7 @@ export default function SpriteCutter() {
         <Button
           variant="outline"
           size="sm"
-          className="flex items-center gap-2 bg-white shadow-lg hover:shadow-xl transition-shadow border-gray-300 hover:border-gray-400"
+          className="flex items-center gap-2 bg-background shadow-lg hover:shadow-xl transition-shadow"
         >
           <Github className="w-4 h-4" />
           GitHub

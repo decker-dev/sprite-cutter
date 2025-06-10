@@ -31,7 +31,7 @@ interface UseFileUploadActions {
 }
 
 export function useFileUpload(options: UseFileUploadOptions = {}): [UseFileUploadState, UseFileUploadActions] {
-  const { accept = "*", maxSize = 5 * 1024 * 1024, multiple = false } = options
+  const { accept = "*", maxSize, multiple = false } = options
 
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [isDragging, setIsDragging] = useState(false)
@@ -39,17 +39,12 @@ export function useFileUpload(options: UseFileUploadOptions = {}): [UseFileUploa
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const validateFile = useCallback((file: File): string | null => {
-    if (maxSize && file.size > maxSize) {
-      const maxSizeMB = Math.round(maxSize / (1024 * 1024))
-      return `File size must be less than ${maxSizeMB}MB`
-    }
-
     if (accept !== "*" && !file.type.match(accept.replace("*", ".*"))) {
       return `File type not supported`
     }
 
     return null
-  }, [maxSize, accept])
+  }, [accept])
 
   const addFiles = useCallback((newFiles: File[]) => {
     const validFiles: FileWithPreview[] = []
@@ -129,7 +124,6 @@ export function useFileUpload(options: UseFileUploadOptions = {}): [UseFileUploa
   }, [addFiles])
 
   const getInputProps = useCallback((): React.InputHTMLAttributes<HTMLInputElement> => ({
-    ref: fileInputRef,
     type: "file",
     accept,
     multiple,
