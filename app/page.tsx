@@ -998,18 +998,14 @@ export default function SpriteCutter() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      const duration = Date.now() - startTime;
-
       // Cancel timer if operation finished before 300ms
       clearTimeout(loadingTimer);
 
-      // Only show success toast if operation took more than 300ms OR if loading was already shown
-      if (duration >= 300 || loadingToast) {
-        toast.success("Download completed!", {
-          id: loadingToast || undefined,
-          description: `Downloaded ${cropAreas.length} sprites in sprites_collection.zip`,
-        });
-      }
+      // Always show success toast when download completes
+      toast.success("Download completed!", {
+        id: loadingToast || undefined,
+        description: `Downloaded ${cropAreas.length} sprites in sprites_collection.zip`,
+      });
     } catch (error) {
       console.error("Error during download:", error);
       clearTimeout(loadingTimer);
