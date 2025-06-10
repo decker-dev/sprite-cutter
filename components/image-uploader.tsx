@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import React, { useRef } from "react"
-import { AlertCircleIcon, ImageUpIcon, XIcon } from "lucide-react"
-import { useFileUpload } from "@/hooks/use-file-upload"
+import React, { useRef } from "react";
+import { AlertCircleIcon, ImageUpIcon, XIcon } from "lucide-react";
+import { useFileUpload } from "@/hooks/use-file-upload";
 
 interface ImageUploaderProps {
-  onImageSelect: (file: File) => void
+  onImageSelect: (file: File) => void;
 }
 
 export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [
     { files, isDragging, errors },
@@ -25,21 +25,24 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
   ] = useFileUpload({
     accept: "image/*",
     multiple: false,
-  })
+  });
 
-  const previewUrl = files[0]?.preview || null
+  const previewUrl = files[0]?.preview || null;
 
   // Notify parent component when file is selected
   React.useEffect(() => {
     if (files[0]?.file) {
-      onImageSelect(files[0].file)
+      onImageSelect(files[0].file);
     }
-  }, [files, onImageSelect])
+  }, [files, onImageSelect]);
 
   return (
     <div className="flex flex-col gap-2">
       <div className="relative">
         {/* Drop area */}
+        {/* biome-ignore lint/a11y/useSemanticElements: <explanation> */}
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
+        {/* biome-ignore lint/a11y/useFocusableInteractive: <explanation> */}
         <div
           role="button"
           onClick={() => fileInputRef.current?.click()}
@@ -75,9 +78,6 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
               <p className="mb-1.5 text-sm font-medium">
                 Drop your image here or click to browse
               </p>
-              <p className="text-muted-foreground text-xs">
-                Any image size supported
-              </p>
             </div>
           )}
         </div>
@@ -87,9 +87,9 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
               type="button"
               className="focus-visible:border-ring focus-visible:ring-ring/50 z-50 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-[color,box-shadow] outline-none hover:bg-black/80 focus-visible:ring-[3px]"
               onClick={(e) => {
-                e.stopPropagation()
+                e.stopPropagation();
                 if (files[0]?.id) {
-                  removeFile(files[0].id)
+                  removeFile(files[0].id);
                 }
               }}
               aria-label="Remove image"
@@ -110,5 +110,5 @@ export default function ImageUploader({ onImageSelect }: ImageUploaderProps) {
         </div>
       )}
     </div>
-  )
-} 
+  );
+}

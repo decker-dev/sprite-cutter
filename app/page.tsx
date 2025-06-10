@@ -142,7 +142,7 @@ const SpriteCard = memo(
 
         <div className="space-y-1 text-sm">
           <div className="flex items-center gap-2">
-            <strong>Nombre:</strong>
+            <strong>Name:</strong>
             {editingId === area.id ? (
               <div className="flex gap-1 flex-1">
                 <Input
@@ -172,11 +172,11 @@ const SpriteCard = memo(
             )}
           </div>
           <div>
-            <strong>Posición:</strong> ({Math.round(area.x)},{" "}
+            <strong>Position:</strong> ({Math.round(area.x)},{" "}
             {Math.round(area.y)})
           </div>
           <div>
-            <strong>Tamaño:</strong> {Math.round(area.width)} ×{" "}
+            <strong>Size:</strong> {Math.round(area.width)} ×{" "}
             {Math.round(area.height)}
           </div>
         </div>
@@ -235,13 +235,13 @@ export default function SpriteCutter() {
       setCropAreas([]);
       drawCanvas(img, []);
 
-      toast.success("Imagen cargada exitosamente", {
+      toast.success("Image loaded successfully", {
         description: `${file.name} - ${img.width}x${img.height}px`,
       });
     };
     img.onerror = () => {
-      toast.error("Error al cargar la imagen", {
-        description: "Asegúrate de que el archivo sea una imagen válida",
+      toast.error("Error loading image", {
+        description: "Make sure the file is a valid image",
       });
     };
     img.src = URL.createObjectURL(file);
@@ -641,7 +641,7 @@ export default function SpriteCutter() {
     (areaId: string, rows: number, cols: number) => {
       const area = cropAreas.find((a) => a.id === areaId);
       if (!area) {
-        toast.error("No se pudo encontrar el área seleccionada");
+        toast.error("Could not find the selected area");
         return;
       }
 
@@ -680,9 +680,9 @@ export default function SpriteCutter() {
       setContextMenuAreaId(null);
       setShowContextMenu(false);
 
-      // Toast de éxito
-      toast.success(`Grilla ${rows}x${cols} creada`, {
-        description: `Se generaron ${totalSprites} sprites de ${Math.round(cellWidth)}x${Math.round(cellHeight)}px`,
+      // Success toast
+      toast.success(`Grid ${rows}x${cols} created`, {
+        description: `Generated ${totalSprites} sprites of ${Math.round(cellWidth)}x${Math.round(cellHeight)}px`,
       });
     },
     [cropAreas, selectedAreaId, activeAreaId],
@@ -884,13 +884,13 @@ export default function SpriteCutter() {
         // El área recién creada se vuelve activa
         setActiveAreaId(newArea.id);
 
-        // Toast de confirmación
-        toast.success("Nuevo sprite creado", {
+        // Confirmation toast
+        toast.success("New sprite created", {
           description: `"${newArea.name}" - ${Math.round(newArea.width)}x${Math.round(newArea.height)}px`,
         });
       } else if (currentArea.width <= 10 || currentArea.height <= 10) {
-        toast.warning("Sprite muy pequeño", {
-          description: "El área debe ser más grande para crear un sprite",
+        toast.warning("Sprite too small", {
+          description: "The area must be larger to create a sprite",
         });
       }
       setCurrentArea(null);
@@ -914,8 +914,8 @@ export default function SpriteCutter() {
         setActiveAreaId(null);
       }
 
-      toast.success("Sprite eliminado", {
-        description: `Se eliminó "${areaToDelete.name}"`,
+      toast.success("Sprite deleted", {
+        description: `Deleted "${areaToDelete.name}"`,
       });
     },
     [selectedAreaId, activeAreaId, cropAreas],
@@ -923,17 +923,17 @@ export default function SpriteCutter() {
 
   const downloadCrops = useCallback(async () => {
     if (!image || cropAreas.length === 0) {
-      toast.error("No hay sprites para descargar");
+      toast.error("No sprites to download");
       return;
     }
 
     const startTime = Date.now();
     let loadingToast: string | number | null = null;
 
-    // Solo mostrar toast de carga después de 300ms
+    // Only show loading toast after 300ms
     const loadingTimer = setTimeout(() => {
-      loadingToast = toast.loading("Preparando descarga...", {
-        description: "Procesando sprites para descarga",
+      loadingToast = toast.loading("Preparing download...", {
+        description: "Processing sprites for download",
       });
     }, 300);
 
@@ -958,13 +958,13 @@ export default function SpriteCutter() {
           total: cropAreas.length,
         });
 
-        // Solo actualizar toast si ya se mostró (después de 300ms)
+        // Only update toast if it was already shown (after 300ms)
         if (loadingToast) {
           toast.loading(
-            `Procesando sprite ${i + 1} de ${cropAreas.length}...`,
+            `Processing sprite ${i + 1} of ${cropAreas.length}...`,
             {
               id: loadingToast,
-              description: `Generando: ${area.name}.png`,
+              description: `Generating: ${area.name}.png`,
             },
           );
         }
@@ -973,7 +973,7 @@ export default function SpriteCutter() {
         const tempCanvas = document.createElement("canvas");
         const tempCtx = tempCanvas.getContext("2d");
         if (!tempCtx) {
-          console.warn(`No se pudo procesar el sprite: ${area.name}`);
+          console.warn(`Could not process sprite: ${area.name}`);
           continue;
         }
 
@@ -1003,17 +1003,17 @@ export default function SpriteCutter() {
         }
       }
 
-      // Generar ZIP
+      // Generate ZIP
       if (loadingToast) {
-        toast.loading("Generando archivo ZIP...", {
+        toast.loading("Generating ZIP file...", {
           id: loadingToast,
-          description: "Comprimiendo sprites",
+          description: "Compressing sprites",
         });
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
 
-      // Descargar archivo
+      // Download file
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
@@ -1026,25 +1026,25 @@ export default function SpriteCutter() {
 
       const duration = Date.now() - startTime;
 
-      // Cancelar el timer si la operación terminó antes de 300ms
+      // Cancel timer if operation finished before 300ms
       clearTimeout(loadingTimer);
 
-      // Solo mostrar toast de éxito si la operación tardó más de 300ms O si ya se mostró el loading
+      // Only show success toast if operation took more than 300ms OR if loading was already shown
       if (duration >= 300 || loadingToast) {
-        toast.success("¡Descarga completada!", {
+        toast.success("Download completed!", {
           id: loadingToast || undefined,
-          description: `Se descargaron ${cropAreas.length} sprites en sprites_collection.zip`,
+          description: `Downloaded ${cropAreas.length} sprites in sprites_collection.zip`,
         });
       }
     } catch (error) {
-      console.error("Error durante la descarga:", error);
+      console.error("Error during download:", error);
       clearTimeout(loadingTimer);
 
-      // Siempre mostrar errores
-      toast.error("Error en la descarga", {
+      // Always show errors
+      toast.error("Download error", {
         id: loadingToast || undefined,
         description:
-          "Hubo un problema al generar los sprites. Inténtalo de nuevo.",
+          "There was a problem generating the sprites. Please try again.",
       });
     } finally {
       setDownloadProgress({ isDownloading: false, current: 0, total: 0 });
@@ -1053,7 +1053,7 @@ export default function SpriteCutter() {
 
   const clearAll = useCallback(() => {
     if (cropAreas.length === 0) {
-      toast.info("No hay áreas para limpiar");
+      toast.info("No areas to clear");
       return;
     }
 
@@ -1065,8 +1065,8 @@ export default function SpriteCutter() {
       drawCanvas(image, []);
     }
 
-    toast.success("Todas las áreas han sido eliminadas", {
-      description: `Se eliminaron ${cropAreas.length} área(s)`,
+    toast.success("All areas have been cleared", {
+      description: `Removed ${cropAreas.length} area(s)`,
     });
   }, [image, drawCanvas, cropAreas.length]);
 
