@@ -1,13 +1,12 @@
-import type React from "react"
-import type { Metadata, Viewport } from "next"
-import "./globals.css"
-import { Analytics } from "@vercel/analytics/react"
-import { Suspense } from "react"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/sonner"
+import type React from "react";
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://sprite-cutter.vercel.app'),
+  metadataBase: new URL("https://sprite-cutter.vercel.app"),
   title: {
     default: "Sprite Cutter - Online Tool for Cutting Sprites",
     template: "%s | Sprite Cutter",
@@ -96,8 +95,8 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#3b82f6",
     "msapplication-tap-highlight": "no",
   },
-  generator: 'v0.dev'
-}
+  generator: "v0.dev",
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -109,12 +108,12 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -125,11 +124,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-            {children}
+          {children}
           <Analytics />
           <Toaster />
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }
