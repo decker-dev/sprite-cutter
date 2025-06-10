@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Trash2, Download, Upload, Scissors, Edit, RotateCcw, Github, Grid3X3, Grid2X2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
+import ImageUploader from "@/components/image-uploader"
 
 import JSZip from "jszip"
 
@@ -170,7 +171,7 @@ export default function SpriteCutter() {
     current: 0,
     total: 0,
   })
-  const [isDragging, setIsDragging] = useState(false)
+
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("create")
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null)
   const [activeAreaId, setActiveAreaId] = useState<string | null>(null) // Área que se mantiene naranja
@@ -181,14 +182,11 @@ export default function SpriteCutter() {
   const [showContextMenu, setShowContextMenu] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const dropZoneRef = useRef<HTMLDivElement>(null)
 
-  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      loadImageFile(file)
-    }
+
+
+  const handleImageSelect = useCallback((file: File) => {
+    loadImageFile(file)
   }, [])
 
   const loadImageFile = useCallback((file: File) => {
@@ -216,10 +214,7 @@ export default function SpriteCutter() {
     setIsModifying(false)
     setContextMenuAreaId(null)
 
-    // Limpiar el input file
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
+
   }, [])
 
   // Función para detectar en qué parte del recuadro se hizo clic
@@ -845,35 +840,7 @@ export default function SpriteCutter() {
     }
   }, [image, drawCanvas])
 
-  // Drag and drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }, [])
 
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }, [])
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(false)
-
-      const files = e.dataTransfer.files
-      if (files && files.length > 0) {
-        const file = files[0]
-        if (file.type.startsWith("image/")) {
-          loadImageFile(file)
-        }
-      }
-    },
-    [loadImageFile],
-  )
 
   // Funciones para manejar la edición de nombres
   const handleStartEdit = useCallback((id: string, name: string) => {
@@ -919,43 +886,9 @@ export default function SpriteCutter() {
         <CardContent className="space-y-6">
           {/* Upload Section - Solo se muestra si no hay imagen */}
           {!image && (
-            <div
-              ref={dropZoneRef}
-              className={`space-y-2 ${isDragging ? "ring-2 ring-blue-500 bg-blue-50" : ""}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
+            <div className="space-y-2">
               <Label htmlFor="image-upload">Upload Image</Label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors ${
-                  isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
-                }`}
-              >
-                <Upload className={`w-12 h-12 mb-4 ${isDragging ? "text-blue-500" : "text-gray-400"}`} />
-                <p className="text-lg mb-2 font-medium">
-                  {isDragging ? "Drop the image here" : "Drag and drop an image here"}
-                </p>
-                <p className="text-sm text-gray-500 mb-4">o</p>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    ref={fileInputRef}
-                    className="hidden"
-                  />
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Select File
-                  </Button>
-                </div>
-              </div>
+              <ImageUploader onImageSelect={handleImageSelect} maxSizeMB={5} />
             </div>
           )}
 
