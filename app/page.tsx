@@ -1017,7 +1017,7 @@ export default function SpriteCutter() {
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sprites_collection.zip`;
+      a.download = "sprites_collection.zip";
       a.style.display = "none";
       document.body.appendChild(a);
       a.click();
@@ -1149,7 +1149,6 @@ export default function SpriteCutter() {
                       left: contextMenuPosition.x,
                       top: contextMenuPosition.y,
                     }}
-                    onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
