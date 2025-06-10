@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { Analytics } from "@vercel/analytics/react"
 import { Suspense } from "react"
+import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://sprite-cutter.vercel.app'),
@@ -115,12 +116,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <Suspense>
-          {children}
-        </Suspense>
-        <Analytics />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Suspense>
+            {children}
+          </Suspense>
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )

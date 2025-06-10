@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Trash2, Download, Upload, Scissors, Edit, RotateCcw, Github, Grid3X3, Grid2X2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 import JSZip from "jszip"
 
@@ -904,12 +905,15 @@ export default function SpriteCutter() {
               <Scissors className="w-6 h-6" />
               Sprite Cutter
             </CardTitle>
-            {image && (
-              <Button onClick={resetAll} variant="outline" size="sm" className="flex items-center gap-2">
-                <RotateCcw className="w-4 h-4" />
-                Reset
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              {image && (
+                <Button onClick={resetAll} variant="outline" size="sm" className="flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Reset
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
