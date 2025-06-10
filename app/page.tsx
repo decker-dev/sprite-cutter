@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Trash2, Download, Upload, Scissors, Edit, RotateCcw, Github } from "lucide-react"
+import { Trash2, Download, Upload, Scissors, Edit, RotateCcw, Github, Grid3X3, Grid2X2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+
 import JSZip from "jszip"
 
 interface CropArea {
@@ -174,6 +175,9 @@ export default function SpriteCutter() {
   const [activeAreaId, setActiveAreaId] = useState<string | null>(null) // Área que se mantiene naranja
   const [originalArea, setOriginalArea] = useState<CropArea | null>(null)
   const [isModifying, setIsModifying] = useState(false)
+  const [contextMenuAreaId, setContextMenuAreaId] = useState<string | null>(null)
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 })
+  const [showContextMenu, setShowContextMenu] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -209,6 +213,7 @@ export default function SpriteCutter() {
     setActiveAreaId(null)
     setOriginalArea(null)
     setIsModifying(false)
+    setContextMenuAreaId(null)
 
     // Limpiar el input file
     if (fileInputRef.current) {
@@ -463,6 +468,33 @@ export default function SpriteCutter() {
     }
   }, [image, cropAreas, drawCanvas])
 
+  // Effect para manejar clicks fuera del context menu y tecla Escape
+  useEffect(() => {
+    const handleGlobalClick = (event: MouseEvent) => {
+      if (showContextMenu) {
+        setShowContextMenu(false)
+        setContextMenuAreaId(null)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showContextMenu) {
+        setShowContextMenu(false)
+        setContextMenuAreaId(null)
+      }
+    }
+
+    if (showContextMenu) {
+      document.addEventListener('click', handleGlobalClick)
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showContextMenu])
+
   const getCanvasCoordinates = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current
@@ -477,9 +509,110 @@ export default function SpriteCutter() {
     [scale],
   )
 
+  // Nueva función para detectar si un punto está dentro de un área
+  const getAreaAtPoint = useCallback(
+    (point: { x: number; y: number }, areas: CropArea[]): CropArea | null => {
+      // Buscar en orden de prioridad: activa -> seleccionada -> resto
+      const sortedAreas = [...areas].sort((a, b) => {
+        if (a.id === activeAreaId) return -1
+        if (b.id === activeAreaId) return 1
+        if (a.id === selectedAreaId) return -1
+        if (b.id === selectedAreaId) return 1
+        return 0
+      })
+
+      for (const area of sortedAreas) {
+        if (point.x >= area.x && point.x <= area.x + area.width && 
+            point.y >= area.y && point.y <= area.y + area.height) {
+          return area
+        }
+      }
+      return null
+    },
+    [activeAreaId, selectedAreaId],
+  )
+
+  // Nueva función para crear grilla
+  const createGrid = useCallback(
+    (areaId: string, rows: number, cols: number) => {
+      const area = cropAreas.find(a => a.id === areaId)
+      if (!area) return
+
+      const cellWidth = area.width / cols
+      const cellHeight = area.height / rows
+      const newAreas: CropArea[] = []
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const newArea: CropArea = {
+            id: `${Date.now()}_${row}_${col}`,
+            x: area.x + (col * cellWidth),
+            y: area.y + (row * cellHeight),
+            width: cellWidth,
+            height: cellHeight,
+            name: `${area.name}_${row + 1}x${col + 1}`
+          }
+          newAreas.push(newArea)
+        }
+      }
+
+      // Remover el área original y agregar las nuevas
+      setCropAreas(prev => {
+        const filtered = prev.filter(a => a.id !== areaId)
+        return [...filtered, ...newAreas]
+      })
+
+      // Limpiar estados relacionados con el área eliminada
+      if (selectedAreaId === areaId) {
+        setSelectedAreaId(null)
+      }
+      if (activeAreaId === areaId) {
+        setActiveAreaId(null)
+      }
+      setContextMenuAreaId(null)
+      setShowContextMenu(false)
+    },
+    [cropAreas, selectedAreaId, activeAreaId],
+  )
+
+  // Manejar click derecho
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!image) return
+
+      event.preventDefault()
+      const point = getCanvasCoordinates(event)
+      const area = getAreaAtPoint(point, cropAreas)
+
+      if (area) {
+        setContextMenuAreaId(area.id)
+        setContextMenuPosition({ x: event.clientX, y: event.clientY })
+        setShowContextMenu(true)
+      } else {
+        setShowContextMenu(false)
+      }
+    },
+    [image, getCanvasCoordinates, getAreaAtPoint, cropAreas],
+  )
+
+  // Cerrar context menu cuando se hace click fuera
+  const handleCloseContextMenu = useCallback(() => {
+    setShowContextMenu(false)
+    setContextMenuAreaId(null)
+  }, [])
+
   const handleMouseDown = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       if (!image) return
+
+      // Cerrar context menu si está abierto
+      if (showContextMenu) {
+        setShowContextMenu(false)
+        setContextMenuAreaId(null)
+      }
+
+      // Solo procesar click izquierdo para interacciones normales
+      if (event.button !== 0) return
 
       const point = getCanvasCoordinates(event)
       const { mode, areaId } = getInteractionMode(point, cropAreas)
@@ -507,7 +640,7 @@ export default function SpriteCutter() {
         setIsModifying(false)
       }
     },
-    [image, getCanvasCoordinates, getInteractionMode, cropAreas, activeAreaId],
+    [image, getCanvasCoordinates, getInteractionMode, cropAreas, activeAreaId, showContextMenu],
   )
 
   const handleMouseMove = useCallback(
@@ -822,23 +955,98 @@ export default function SpriteCutter() {
             </div>
           )}
 
-          {/* Canvas Section */}
+          {/* Canvas Section with Context Menu */}
           {image && (
             <div className="space-y-4">
-              <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="border rounded-lg p-4 bg-gray-50 relative">
                 <canvas
                   ref={canvasRef}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
+                  onContextMenu={handleContextMenu}
                   className="border border-gray-300 max-w-full"
                   style={{ display: "block", margin: "0 auto" }}
                 />
+                
+                {/* Custom Context Menu */}
+                {showContextMenu && contextMenuAreaId && (
+                  <div
+                    className="fixed z-50 min-w-[12rem] bg-white border border-gray-200 rounded-md shadow-lg py-1"
+                    style={{
+                      left: contextMenuPosition.x,
+                      top: contextMenuPosition.y,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => {
+                        createGrid(contextMenuAreaId, 2, 2)
+                        handleCloseContextMenu()
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    >
+                      <Grid2X2 className="w-4 h-4" />
+                      Grid 2x2
+                    </button>
+                    <button
+                      onClick={() => {
+                        createGrid(contextMenuAreaId, 3, 3)
+                        handleCloseContextMenu()
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      Grid 3x3
+                    </button>
+                    <button
+                      onClick={() => {
+                        createGrid(contextMenuAreaId, 4, 4)
+                        handleCloseContextMenu()
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      Grid 4x4
+                    </button>
+                    <button
+                      onClick={() => {
+                        createGrid(contextMenuAreaId, 5, 5)
+                        handleCloseContextMenu()
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      Grid 5x5
+                    </button>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      onClick={() => {
+                        createGrid(contextMenuAreaId, 3, 4)
+                        handleCloseContextMenu()
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      Grid 3x4
+                    </button>
+                    <button
+                      onClick={() => {
+                        createGrid(contextMenuAreaId, 4, 3)
+                        handleCloseContextMenu()
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      Grid 4x3
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="text-sm text-gray-600 text-center space-y-1">
                 <div>🔴 Red: Creating new • 🔵 Blue: Normal • 🟠 Orange: Active (always on top)</div>
-                <div>Click on an area to activate it • Click on empty to deactivate</div>
+                <div>Click on an area to activate it • Right-click on areas for grid options</div>
               </div>
             </div>
           )}
