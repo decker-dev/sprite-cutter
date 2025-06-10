@@ -234,15 +234,9 @@ export default function SpriteCutter() {
       setImage(img);
       setCropAreas([]);
       drawCanvas(img, []);
-
-      toast.success("Image loaded successfully", {
-        description: `${file.name} - ${img.width}x${img.height}px`,
-      });
     };
     img.onerror = () => {
-      toast.error("Error loading image", {
-        description: "Make sure the file is a valid image",
-      });
+      console.error("Error loading image");
     };
     img.src = URL.createObjectURL(file);
   }, []);
@@ -641,14 +635,13 @@ export default function SpriteCutter() {
     (areaId: string, rows: number, cols: number) => {
       const area = cropAreas.find((a) => a.id === areaId);
       if (!area) {
-        toast.error("Could not find the selected area");
+        console.error("Could not find the selected area");
         return;
       }
 
       const cellWidth = area.width / cols;
       const cellHeight = area.height / rows;
       const newAreas: CropArea[] = [];
-      const totalSprites = rows * cols;
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
@@ -679,11 +672,6 @@ export default function SpriteCutter() {
       }
       setContextMenuAreaId(null);
       setShowContextMenu(false);
-
-      // Success toast
-      toast.success(`Grid ${rows}x${cols} created`, {
-        description: `Generated ${totalSprites} sprites of ${Math.round(cellWidth)}x${Math.round(cellHeight)}px`,
-      });
     },
     [cropAreas, selectedAreaId, activeAreaId],
   );
@@ -883,15 +871,6 @@ export default function SpriteCutter() {
         setCropAreas((prev) => [...prev, newArea]);
         // El área recién creada se vuelve activa
         setActiveAreaId(newArea.id);
-
-        // Confirmation toast
-        toast.success("New sprite created", {
-          description: `"${newArea.name}" - ${Math.round(newArea.width)}x${Math.round(newArea.height)}px`,
-        });
-      } else if (currentArea.width <= 10 || currentArea.height <= 10) {
-        toast.warning("Sprite too small", {
-          description: "The area must be larger to create a sprite",
-        });
       }
       setCurrentArea(null);
     }
@@ -913,17 +892,12 @@ export default function SpriteCutter() {
       if (activeAreaId === id) {
         setActiveAreaId(null);
       }
-
-      toast.success("Sprite deleted", {
-        description: `Deleted "${areaToDelete.name}"`,
-      });
     },
     [selectedAreaId, activeAreaId, cropAreas],
   );
 
   const downloadCrops = useCallback(async () => {
     if (!image || cropAreas.length === 0) {
-      toast.error("No sprites to download");
       return;
     }
 
@@ -1053,7 +1027,6 @@ export default function SpriteCutter() {
 
   const clearAll = useCallback(() => {
     if (cropAreas.length === 0) {
-      toast.info("No areas to clear");
       return;
     }
 
@@ -1064,10 +1037,6 @@ export default function SpriteCutter() {
     if (image) {
       drawCanvas(image, []);
     }
-
-    toast.success("All areas have been cleared", {
-      description: `Removed ${cropAreas.length} area(s)`,
-    });
   }, [image, drawCanvas, cropAreas.length]);
 
   // Funciones para manejar la edición de nombres
